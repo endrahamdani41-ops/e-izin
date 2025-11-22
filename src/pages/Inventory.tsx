@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -26,12 +26,28 @@ export interface InventoryItem {
   category: string;
 }
 
+const LOCAL_STORAGE_KEY = "inventoryItems";
+
 const Inventory = () => {
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(() => {
+    // Load initial state from localStorage
+    if (typeof window !== "undefined") {
+      const savedItems = localStorage.getItem(LOCAL_STORAGE_KEY);
+      return savedItems ? JSON.parse(savedItems) : [];
+    }
+    return [];
+  });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | undefined>(undefined);
   const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState<string | undefined>(undefined);
+
+  // Save inventoryItems to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(inventoryItems));
+    }
+  }, [inventoryItems]);
 
   const handleSaveItem = (item: Omit<InventoryItem, "id"> & { id?: string }) => {
     if (item.id) {
