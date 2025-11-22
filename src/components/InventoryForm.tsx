@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { InventoryItem } from "@/pages/Inventory";
 
 const formSchema = z.object({
+  id: z.string().optional(), // Add id for editing existing items
   name: z.string().min(2, {
     message: "Nama barang harus memiliki setidaknya 2 karakter.",
   }),
@@ -30,13 +31,15 @@ const formSchema = z.object({
 });
 
 interface InventoryFormProps {
-  onSubmit: (item: Omit<InventoryItem, "id">) => void;
+  initialData?: InventoryItem;
+  onSave: (item: Omit<InventoryItem, "id"> & { id?: string }) => void;
+  onClose: () => void; // Added to close the dialog after saving
 }
 
-export const InventoryForm: React.FC<InventoryFormProps> = ({ onSubmit }) => {
+export const InventoryForm: React.FC<InventoryFormProps> = ({ initialData, onSave, onClose }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       name: "",
       quantity: 0,
       price: 0,
@@ -44,9 +47,19 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({ onSubmit }) => {
     },
   });
 
+  // Reset form with initialData when it changes (for editing)
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    } else {
+      form.reset({ name: "", quantity: 0, price: 0, category: "" });
+    }
+  }, [initialData, form]);
+
   function handleSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit(values);
+    onSave(values);
     form.reset();
+    onClose(); // Close the dialog after saving
   }
 
   return (
@@ -104,7 +117,9 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({ onSubmit }) => {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">Tambah Barang</Button>
+        <Button type="submit" className="w-full">
+          {initialData ? "Simpan Perubahan" : "Tambah Barang"}
+        </Button>
       </form>
     </Form>
   );
